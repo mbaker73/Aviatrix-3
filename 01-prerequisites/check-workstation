@@ -1,0 +1,42 @@
+#!/bin/bash
+# Challenge 1 check — verify tools and credentials are working
+
+set -euo pipefail
+FAIL=0
+
+check() {
+  local desc="$1"; shift
+  if "$@" &>/dev/null; then
+    echo "  [PASS] $desc"
+  else
+    echo "  [FAIL] $desc"
+    FAIL=1
+  fi
+}
+
+echo "--- Checking required tools ---"
+check "terraform >= 1.5" bash -c 'terraform version | grep -E "Terraform v1\.[5-9]|v[2-9]\."'
+check "aws cli present"  aws --version
+check "kubectl present"  kubectl version --client
+check "helm present"     helm version
+
+echo "--- Checking AWS credentials ---"
+check "AWS identity resolves" aws sts get-caller-identity
+check "us-west-2 reachable"   aws ec2 describe-availability-zones --region us-west-2
+
+echo "--- Checking repo clone ---"
+check "blueprint repo cloned" test -d /root/aviatrix-blueprints/blueprints/k8s-cluster-aas/aws/network
+
+echo "--- Checking Aviatrix Controller ---"
+check "controller reachable" bash -c \
+  'curl -fsk "https://${AVIATRIX_CONTROLLER_IP}/v1/api?action=get_controller_version" \
+   -d "CID=${AVIATRIX_CID}" | grep -q "results"'
+
+if [ "$FAIL" -eq 1 ]; then
+  echo ""
+  echo "One or more checks failed. Review the steps above and try again."
+  exit 1
+fi
+
+echo ""
+echo "All checks passed! Ready to deploy the network layer."
