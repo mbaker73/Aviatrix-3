@@ -1,21 +1,36 @@
-slug: untitled-track-lm4ba5
-id: ys6va4fw7qez
-revision: 1
-title: Untitled Track
-description: ""
-icon: ""
-tags: []
-owner: mb-demos
-developers:
-- matt@instruqt.com
-instructors: []
-idle_timeout: 300
-timelimit: 1200
-lab_config:
-  extend_ttl: 0
-  sidebar_enabled: true
-  hideStopButton: false
-  feedback_recap_enabled: true
-  feedback_tab_enabled: false
-  loadingMessages: true
-enhanced_loading: null
+slug: k8s-cluster-aas
+title: "Kubernetes Cluster-as-a-Service with Aviatrix DCF"
+description: |
+  Build a production-ready multi-team Kubernetes platform on AWS where each team 
+  gets a dedicated EKS cluster in its own VPC. Workload isolation is enforced by 
+  Aviatrix Distributed Cloud Firewall (DCF) — no team can reach another team's 
+  cluster without an explicit PERMIT rule.
+
+  You will deploy three layers of infrastructure using Terraform:
+  - **Layer 1** — Transit gateway, VPCs, spokes, and DCF policy
+  - **Layer 2** — EKS control planes for three teams (parallel)
+  - **Layer 3** — Node groups and Helm charts (parallel)
+
+  Then you'll verify the DCF policy with live traffic tests across all team clusters.
+
+tags:
+  - aviatrix
+  - kubernetes
+  - eks
+  - dcf
+  - networking
+  - terraform
+  - security
+  - zero-trust
+
+owner: aviatrix
+developers: []
+
+timelimit: 5400  # 90 minutes
+
+maintenance:
+  start: "04:00"
+  stop: "06:00"
+  timezone: "UTC"
+
+skipping_enabled: false
