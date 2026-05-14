@@ -1,0 +1,105 @@
+slug: prerequisites
+id: prerequisites
+type: challenge
+title: "Prerequisites & Architecture Overview"
+teaser: "Verify your environment and understand the Cluster-as-a-Service architecture."
+notes:
+  - type: text
+    contents: |
+      ## Kubernetes Cluster-as-a-Service
+
+      In this lab you will build a **Cluster-as-a-Service (CaaS)** pattern on AWS 
+      using Aviatrix. Each team gets a fully dedicated EKS cluster in its own VPC.
+
+      Isolation between teams is enforced by **Aviatrix Distributed Cloud Firewall (DCF)** 
+      at the VPC boundary — using SmartGroups and explicit PERMIT/DENY rules rather than 
+      network ACLs or security groups.
+
+  - type: text
+    contents: |
+      ## Architecture
+
+      ```
+      Transit GW (10.2.0.0/20)
+      ├── Team-A Spoke (10.10.0.0/20) ──── EKS cluster-a  [pods: 100.64.0.0/18]
+      ├── Team-B Spoke (10.11.0.0/20) ──── EKS cluster-b  [pods: 100.64.64.0/18]
+      ├── Team-C Spoke (10.12.0.0/20) ──── EKS cluster-c  [pods: 100.64.128.0/18]
+      └── DB Spoke     (10.5.0.0/22)  ──── Shared database
+      ```
+
+      - **5 VPCs**: transit + 3 team spokes + DB spoke
+      - **3 EKS clusters**: one per team, Kubernetes 1.35
+      - **Pod networking**: RFC 6598 overlay (100.64.0.0/16), SNAT to spoke GW IP before DCF
+
+  - type: text
+    contents: |
+      ## DCF Policy Overview
+
+      | Priority | Action | Rule |
+      |----------|--------|------|
+      | 100–101  | DENY   | Geo-block (IR, KP, RU) + ThreatIQ feeds |
+      | 110      | PERMIT | team-a → team-b on TCP/443 |
+      | 111      | PERMIT | team-b → team-a on TCP/8080 |
+      | 120–123  | DENY   | team-a ↔ team-c, team-b ↔ team-c |
+      | 150      | PERMIT | All clusters → EKS required services |
+      | 200      | DENY   | Default deny public internet |
+
+assignment: |
+  ## Verify Your Environment
+
+  Before deploying infrastructure, confirm all required tools are present and 
+  your Aviatrix controller is reachable.
+
+  ### Step 1 — Check tool versions
+
+  Run the following and confirm each version meets the minimum requirement:
+
+  ```bash
+  terraform version        # must be ≥ 1.5
+  aws --version            # must be ≥ 2.x
+  kubectl version --client # any recent version
+  helm version             # any recent version
+  ```
+
+  ### Step 2 — Verify AWS credentials
+
+  Confirm your AWS credentials are configured and you can reach the target region:
+
+  ```bash
+  aws sts get-caller-identity
+  aws ec2 describe-availability-zones --region us-west-2 --query 'AvailabilityZones[].ZoneName'
+  ```
+
+  ### Step 3 — Verify Aviatrix Controller access
+
+  ```bash
+  curl -sk https://$AVIATRIX_CONTROLLER_IP/v1/api?action=get_controller_version \
+    -d "CID=$AVIATRIX_CID" | jq .results
+  ```
+
+  You should see the controller version returned as JSON.
+
+  ### Step 4 — Clone the blueprint repo
+
+  ```bash
+  git clone https://github.com/AviatrixSystems/aviatrix-blueprints.git
+  cd aviatrix-blueprints/blueprints/k8s-cluster-aas
+  ls aws/
+  ```
+
+  Confirm you see the directories: `network/`, `clusters/`, `nodes/`, `k8s-apps/`
+
+  > **Note:** The environment variables `AVIATRIX_CONTROLLER_IP`, `AVIATRIX_USERNAME`, 
+  > `AVIATRIX_PASSWORD`, and `AVIATRIX_CID` are pre-set in this environment. 
+  > Your `AVIATRIX_AWS_ACCOUNT_NAME` is also pre-configured.
+
+tabs:
+  - title: Terminal
+    type: terminal
+    hostname: workstation
+  - title: Aviatrix CoPilot
+    type: website
+    url: https://${AVIATRIX_COPILOT_IP}
+
+difficulty: basic
+timelimit: 600
